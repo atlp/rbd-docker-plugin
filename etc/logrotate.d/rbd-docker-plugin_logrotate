@@ -5,10 +5,8 @@
     delaycompress
     compress
     notifempty
-    # assuming centos 7.1 with systemd
     postrotate
-        systemctl restart rbd-docker-plugin.service > /dev/null 2>/dev/null || true
+        /sbin/service rbd-docker-plugin restart > /dev/null 2>/dev/null || true
     endscript
     notifempty
 }
-# NOTE: config is rbd-docker-plugin_logrotate to avoid clash with binary name and .gitignore
