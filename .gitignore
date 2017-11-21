@@ -1,3 +1,4 @@
 rbd-docker-plugin
 *.tpkg
 vendor
+.idea
