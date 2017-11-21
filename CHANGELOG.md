@@ -8,6 +8,29 @@ We attempt to adhere to [Semantic Versioning](http://semver.org/).
 ### Removed
 ### Changed
 
+## [2.0.1] - 2017-08-28
+### Changed
+- fixed List and Get methods to only return Mountpoint value if volume is
+actually mounted.  Hopefully this matches the Docker Volume API better and
+fixes some spurious volume creation (See #3, #6, #12, and
+yp-engineering/rbd-docker-plugin#36)
+
+## [2.0.0] - 2017-08-25
+### Added
+- add golang/dep support for a repeatable build
+
+### Removed
+- Removed all usage of go-ceph library.  Simplifies the code and now only
+shelling out to 'rbd' executable
+
+### Changed
+- Updated docker/go-plugin-helpers and latest sdk api
+- Fixed List() to call out to 'rbd ls' instead of relying on in memory per-host list
+
+## [1.5.2] - 2017-08
+### Changed
+- Remove cron script installation from tpkg
+
 ## [1.5.1] - 2016-09-20
 ### Changed
 - Update XFS checks to mount/unmount to clear any disk logs
