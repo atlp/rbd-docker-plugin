@@ -1,0 +1,8 @@
+Package: rbd-docker-plugin
+Version: main.VERSION
+Section: base
+Priority: optional
+Architecture: i386
+Maintainer: https://github.com/yp-engineering/rbd-docker-plugin/
+Description: Ceph RBD Docker Plugin
+ Ceph RBD VolumeDriver Docker Plugin daemon
