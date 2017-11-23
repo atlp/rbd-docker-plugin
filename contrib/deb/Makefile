@@ -1,5 +1,5 @@
-VERSION="build"
-PACKAGE="target/rbd-docker-plugin-$(VERSION)"
+VERSION=build
+PACKAGE=target/rbd-docker-plugin-$(VERSION)
 
 .PHONY: all build clean version
 
