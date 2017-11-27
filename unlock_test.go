@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 package main
 
-// trying to write a small test to reproduce (un)locking issues
-
 import (
 	"bytes"
 	"fmt"
@@ -13,17 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	//"github.com/stretchr/testify/assert"
 	assert "github.com/stretchr/testify/require"
 )
 
-//"github.com/ceph/go-ceph/rbd"
-//"github.com/ceph/go-ceph/rados"
-
 var (
 	//testDriver cephRBDVolumeDriver
-	testPool  = "rbd"
-	testImage = "rbd-test"
+	testPool  = "test"
+	testImage = "image"
 )
 
 func TestShUnlockImage(t *testing.T) {
@@ -31,9 +25,27 @@ func TestShUnlockImage(t *testing.T) {
 	locker, err := testDriver.lockImage(testPool, testImage)
 	if err != nil {
 		log.Printf("WARN: Unable to lock image in preparation for test: %s", err)
-		locker = testDriver.localLockerCookie()
+	}
+	// print the locker
+    log.Printf("Locker: %s", locker)
+	// now unlock it
+	err = testDriver.unlockImage(testPool, testImage, locker)
+	assert.Nil(t, err, fmt.Sprintf("Unable to unlock image using sh rbd: %s", err))
+}
+
+func TestLockerOverride(t *testing.T) {
+	_, err := testDriver.lockImage(testPool, testImage)
+	if err != nil {
+		log.Printf("WARN: Unable to lock image in preparation for test: %s", err)
 	}
 
+	// Try to lock it again
+	locker, err := testDriver.lockImage(testPool, testImage)
+	if err != nil {
+		log.Printf("WARN: Unable to relock image: %s", err)
+	}
+	// print the locker
+	log.Printf("Locker: %s", locker)
 	// now unlock it
 	err = testDriver.unlockImage(testPool, testImage, locker)
 	assert.Nil(t, err, fmt.Sprintf("Unable to unlock image using sh rbd: %s", err))

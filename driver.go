@@ -39,6 +39,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"crypto/md5"
+	"encoding/hex"
 
 	"github.com/docker/go-plugins-helpers/volume"
 )
@@ -309,6 +311,7 @@ func (d cephRBDVolumeDriver) Mount(r *volume.MountRequest) (*volume.MountRespons
 	log.Printf("INFO: API Mount(%s)", r)
 	d.m.Lock()
 	defer d.m.Unlock()
+
 
 	// parse full image name for optional/default pieces
 	pool, name, _, err := d.parseImagePoolNameSize(r.Name)
@@ -754,45 +757,50 @@ func (d *cephRBDVolumeDriver) createRBDImage(pool string, name string, size int,
 func (d *cephRBDVolumeDriver) rbdImageIsLocked(pool, name string) (bool, error) {
 	// check the output for a lock -- if blank or error, assume not locked (?)
 	out, err := d.rbdsh(pool, "lock", "ls", name)
-	if err != nil || out != "" {
-		return false, err
+	log.Printf("DEBUG: lock ls result: %s", out)
+	if err == nil && out != "" {
+		return true, nil
 	}
-	// otherwise - no error and output is not blank - assume a lock exists ...
-	return true, nil
+	// no error and output is blank - assume no lock exists ...
+	return false, err
 }
 
 // lockImage locks image and returns locker cookie name
-func (d *cephRBDVolumeDriver) lockImage(pool, imagename string) (string, error) {
-	cookie := d.localLockerCookie()
-	_, err := d.rbdsh(pool, "lock", "add", imagename, cookie)
+func (d *cephRBDVolumeDriver) lockImage(pool, imageName string) (string, error) {
+	// if locked, lets try to unlock it
+	isLocked, _ := d.rbdImageIsLocked(pool, imageName)
+	if isLocked {
+		log.Printf("Image(%s/%s) is locked, will attempt to unlock it...", pool, imageName)
+		d.unlockImage(pool, imageName, "")
+	}
+	// now lock with new cookie
+	cookie := d.localLockerCookie(pool, imageName)
+	_, err := d.rbdsh(pool, "lock", "add", imageName, cookie)
 	if err != nil {
 		return "", err
 	}
 	return cookie, nil
 }
 
-// localLockerCookie returns the Hostname
-func (d *cephRBDVolumeDriver) localLockerCookie() string {
-	host, err := os.Hostname()
-	if err != nil {
-		log.Printf("WARN: HOST_UNKNOWN: unable to get hostname: %s", err)
-		host = "HOST_UNKNOWN"
-	}
-	return host
+// localLockerCookie returns a hex encoded md5sum of the pool + image name
+func (d *cephRBDVolumeDriver) localLockerCookie(pool, imageName string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(pool + imageName))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 // unlockImage releases the exclusive lock on an image
-func (d *cephRBDVolumeDriver) unlockImage(pool, imagename, locker string) error {
+func (d *cephRBDVolumeDriver) unlockImage(pool, imageName, locker string) error {
 	if locker == "" {
-		log.Printf("WARN: Attempting to unlock image(%s/%s) for empty locker using default hostname", pool, imagename)
-		// try to unlock using the local hostname
-		locker = d.localLockerCookie()
+		log.Printf("WARN: Attempting to unlock image(%s/%s) that was not locked by this process...", pool, imageName)
+		// Recreate the cookie
+		locker = d.localLockerCookie(pool, imageName)
 	}
-	log.Printf("INFO: unlockImage(%s/%s, %s)", pool, imagename, locker)
+	log.Printf("INFO: unlockImage(%s/%s, %s)", pool, imageName, locker)
 
 	// first - we need to discover the client id of the locker -- so we have to
 	// `rbd lock list` and grep out fields
-	out, err := d.rbdsh(pool, "lock", "list", imagename)
+	out, err := d.rbdsh(pool, "lock", "list", imageName)
 	if err != nil || out == "" {
 		log.Printf("ERROR: image not locked or ceph rbd error: %s", err)
 		return err
@@ -816,7 +824,7 @@ func (d *cephRBDVolumeDriver) unlockImage(pool, imagename, locker string) error 
 		return errors.New("sh_unlockImage: Unable to determine client.id")
 	}
 
-	_, err = d.rbdsh(pool, "lock", "rm", imagename, locker, clientid)
+	_, err = d.rbdsh(pool, "lock", "rm", imageName, locker, clientid)
 	if err != nil {
 		return err
 	}

@@ -15,10 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: tests that need ceph
-// make fake cluster?
-// use dockerized container with ceph for tests?
-
 const (
 	TEST_SOCKET_PATH             = "/tmp/rbd-test.sock"
 	EXPECTED_ACTIVATION_RESPONSE = "{\"Implements\": [\"VolumeDriver\"]}"
@@ -49,7 +45,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestLocalLockerCookie(t *testing.T) {
-	assert.NotEqual(t, "HOST_UNKNOWN", testDriver.localLockerCookie())
+	pool := "test"
+	imageName := "image"
+	md5 := "f513290389192c42721fc73d4f31ab1d"
+	result := testDriver.localLockerCookie(pool, imageName)
+	assert.Equal(t, md5, result)
 }
 
 func TestRbdImageExists_noName(t *testing.T) {
