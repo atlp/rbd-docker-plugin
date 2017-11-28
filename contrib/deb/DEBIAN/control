@@ -3,6 +3,9 @@ Version: main.VERSION
 Section: base
 Priority: optional
 Architecture: i386
+Build-Depends: debhelper (>= 9),
+               lsb-release,
+               dh-systemd
 Maintainer: https://github.com/yp-engineering/rbd-docker-plugin/
 Description: Ceph RBD Docker Plugin
  Ceph RBD VolumeDriver Docker Plugin daemon
