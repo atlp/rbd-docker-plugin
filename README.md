@@ -202,6 +202,11 @@ create RBD images with XFS filesystem.
 Using [tpkg](http://tpkg.github.io) to distribute and specify native package
 dependencies.  Tested with Centos 7.1 and yum/rpm packages.
 
+To create a debian package, go to contrib/deb and issue the command:
+
+    make
+
+This will create a deb under contrib/deb/target.
 
 # License
 
