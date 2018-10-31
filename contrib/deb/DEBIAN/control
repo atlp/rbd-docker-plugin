@@ -2,7 +2,7 @@ Package: rbd-docker-plugin
 Version: main.VERSION
 Section: base
 Priority: optional
-Architecture: i386
+Architecture: amd64
 Build-Depends: debhelper (>= 9),
                lsb-release,
                dh-systemd
